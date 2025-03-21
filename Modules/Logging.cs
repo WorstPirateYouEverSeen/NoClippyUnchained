@@ -20,20 +20,20 @@ namespace NoClippy.Modules
 
         public override void DrawConfig()
         {
-            if (ImGui.Checkbox("Output to Chat Log", ref NoClippy.Config.LogToChat))
-                NoClippy.Config.Save();
+            if (ImGui.Checkbox("Output to Chat Log", ref NoClippyUnchained.Config.LogToChat))
+                NoClippyUnchained.Config.Save();
             PluginUI.SetItemTooltip("Sends logging to the chat log instead.");
 
-            if (!NoClippy.Config.LogToChat) return;
+            if (!NoClippyUnchained.Config.LogToChat) return;
 
-            if (ImGui.BeginCombo("Log Chat Type", NoClippy.Config.LogChatType.ToString()))
+            if (ImGui.BeginCombo("Log Chat Type", NoClippyUnchained.Config.LogChatType.ToString()))
             {
                 foreach (var chatType in Enum.GetValues<XivChatType>())
                 {
                     if (!ImGui.Selectable(chatType.ToString())) continue;
 
-                    NoClippy.Config.LogChatType = chatType;
-                    NoClippy.Config.Save();
+                    NoClippyUnchained.Config.LogChatType = chatType;
+                    NoClippyUnchained.Config.Save();
                 }
 
                 ImGui.EndCombo();

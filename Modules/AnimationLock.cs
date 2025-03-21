@@ -6,7 +6,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Network;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using ImGuiNET;
-using static NoClippy.NoClippy;
+using static NoClippy.NoClippyUnchained;
 
 namespace NoClippy
 {
@@ -18,8 +18,9 @@ namespace NoClippy
         public Dictionary<uint, float> AnimationLocks = new();
         public ulong TotalActionsReduced = 0ul;
         public double TotalAnimationLockReduction = 0d;
-        public float AnimationLockPercent = 10f;
+        public float AnimationLockPercent = 75f;
         public bool EnableIgnoreCasting = false;
+        public bool UsePercentage = false;
     }
 }
 
@@ -49,7 +50,7 @@ namespace NoClippy.Modules
 
         public override int DrawOrder => 1;
 
-        private const float simulatedRTT = 0.04f;
+        private const float simulatedRTT = 0.001f;
         private float delay = -1;
         private int packetsSent = 0;
         private bool isCasting = false;
@@ -59,7 +60,7 @@ namespace NoClippy.Modules
         private bool saveConfig = false;
         private readonly Dictionary<ushort, float> appliedAnimationLocks = new();
 
-        public bool IsDryRunEnabled => enableAnticheat || Config.EnableDryRun;
+        public bool IsDryRunEnabled => Config.EnableDryRun;
 
         private float AverageDelay(float currentDelay, float weight) =>
             delay > 0
@@ -116,65 +117,90 @@ namespace NoClippy.Modules
                     return;
                 }
 
-                if (newLock != *(float*)(effectHeader + 0x10))
-                {
-                    PrintError("Mismatched animation lock offset! This can be caused by another plugin affecting the animation lock.");
-                    return;
+                if (!Config.UsePercentage) {
+                    var sequence = *(ushort*)(effectHeader + 0x18); // This is 0 for some special actions
+                    var actionID = *(ushort*)(effectHeader + 0x1C);
+                    var appliedLock = appliedAnimationLocks.GetValueOrDefault(sequence, 0.5f);
+
+                    var lastRecordedLock = IsDryRunEnabled ? newLock : appliedLock - simulatedRTT;
+
+                    // Get the difference between the recorded animation lock and the real one
+                    var correction = newLock - lastRecordedLock;
+                    var rtt = appliedLock - oldLock;
+
+                    if (rtt <= simulatedRTT)
+                    {
+                        if (Config.EnableLogging)
+                            PrintLog($"RTT ({F2MS(rtt)} ms) was lower than {F2MS(simulatedRTT)} ms, no adjustments were made");
+                        return;
+                    }
+
+                    var prevAverage = delay;
+                    var newAverage = AverageDelay(rtt, packetsSent > 1 ? 0.1f : 1f);
+                    var average = Math.Max(prevAverage > 0 ? prevAverage : newAverage, 0.001f);
+
+                    var variationMultiplier = Math.Max(rtt / average, 1) - 1;
+                    var networkVariation = simulatedRTT * variationMultiplier;
+
+                    var adjustedAnimationLock = Math.Max(oldLock + correction + networkVariation, 0);
+
+                    if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 10)
+                    {
+                        Game.actionManager->animationLock = adjustedAnimationLock;
+
+                        Config.TotalAnimationLockReduction += newLock - adjustedAnimationLock;
+                        Config.TotalActionsReduced++;
+
+                        if (!saveConfig && DalamudApi.Condition[ConditionFlag.InCombat])
+                            saveConfig = true;
+                    }
+
+                    if (!Config.EnableLogging) return;
+
+                    var sb = new StringBuilder(IsDryRunEnabled ? "[DRY] " : string.Empty)
+                            .Append($"Action: {actionID} ")
+                            .Append(lastRecordedLock != newLock ? $"({F2MS(lastRecordedLock)} > {F2MS(newLock)} ms)" : $"({F2MS(newLock)} ms)")
+                            .Append($" || RTT: {F2MS(rtt)} (+{variationMultiplier:P0}) ms");
+
+                    if (!IsDryRunEnabled)
+                        sb.Append($" || Lock: {F2MS(oldLock)} > {F2MS(adjustedAnimationLock)} ({F2MS(correction + networkVariation):+0;-#}) ms");
+
+                    sb.Append($" || Packets: {packetsSent}");
+
+                    PrintLog(sb.ToString());
                 }
-
-                var sequence = *(ushort*)(effectHeader + 0x18); // This is 0 for some special actions
-                var actionID = *(ushort*)(effectHeader + 0x1C);
-                var appliedLock = appliedAnimationLocks.GetValueOrDefault(sequence, 0.5f);
-
-                if (sequence == Game.actionManager->currentSequence)
-                    appliedAnimationLocks.Clear(); // Probably unnecessary
-
-                var lastRecordedLock = IsDryRunEnabled ? newLock : appliedLock - simulatedRTT;
-
-                // Get the difference between the recorded animation lock and the real one
-                var correction = newLock - lastRecordedLock;
-                var rtt = appliedLock - oldLock;
-
-                if (rtt <= simulatedRTT)
+                else
                 {
-                    if (Config.EnableLogging)
-                        PrintLog($"RTT ({F2MS(rtt)} ms) was lower than {F2MS(simulatedRTT)} ms, no adjustments were made");
-                    return;
+                    var sequence = *(ushort*)(effectHeader + 0x18); // This is 0 for some special actions
+                    var actionID = *(ushort*)(effectHeader + 0x1C);
+                    // Calculate the percentage reduction
+                    var reductionPercent = Config.AnimationLockPercent / 100f;
+                    var adjustedAnimationLock = oldLock * (1f - reductionPercent);
+
+                    // Apply the reduced animation lock
+                    if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 10)
+                    {
+                        Game.actionManager->animationLock = adjustedAnimationLock;
+
+                        Config.TotalAnimationLockReduction += newLock - adjustedAnimationLock;
+                        Config.TotalActionsReduced++;
+
+                        if (!saveConfig && DalamudApi.Condition[ConditionFlag.InCombat])
+                            saveConfig = true;
+                    }
+
+                    if (!Config.EnableLogging) return;
+
+                    var sb = new StringBuilder(IsDryRunEnabled ? "[DRY] " : string.Empty)
+                            .Append($"Action: {actionID} ")
+                            .Append($"({F2MS(oldLock)} ms)")
+                            .Append($" || Reduction: {reductionPercent:P0}");
+
+                    if (!IsDryRunEnabled)
+                        sb.Append($" || Lock: {F2MS(oldLock)} > {F2MS(adjustedAnimationLock)} ({F2MS(oldLock - adjustedAnimationLock):+0;-#}) ms");
+
+                    PrintLog(sb.ToString());
                 }
-
-                var prevAverage = delay;
-                var newAverage = AverageDelay(rtt, packetsSent > 1 ? 0.1f : 1f);
-                var average = Math.Max(prevAverage > 0 ? prevAverage : newAverage, 0.001f);
-
-                var variationMultiplier = Math.Max(rtt / average, 1) - 1;
-                var networkVariation = simulatedRTT * variationMultiplier;
-
-                var adjustedAnimationLock = Math.Max(oldLock + correction + networkVariation, 0);
-
-                if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 10)
-                {
-                    Game.actionManager->animationLock = adjustedAnimationLock;
-
-                    Config.TotalAnimationLockReduction += newLock - adjustedAnimationLock;
-                    Config.TotalActionsReduced++;
-
-                    if (!saveConfig && DalamudApi.Condition[ConditionFlag.InCombat])
-                        saveConfig = true;
-                }
-
-                if (!Config.EnableLogging) return;
-
-                var sb = new StringBuilder(IsDryRunEnabled ? "[DRY] " : string.Empty)
-                        .Append($"Action: {actionID} ")
-                        .Append(lastRecordedLock != newLock ? $"({F2MS(lastRecordedLock)} > {F2MS(newLock)} ms)" : $"({F2MS(newLock)} ms)")
-                        .Append($" || RTT: {F2MS(rtt)} (+{variationMultiplier:P0}) ms");
-
-                if (!IsDryRunEnabled)
-                    sb.Append($" || Lock: {F2MS(oldLock)} > {F2MS(adjustedAnimationLock)} ({F2MS(correction + networkVariation):+0;-#}) ms");
-
-                sb.Append($" || Packets: {packetsSent}");
-
-                PrintLog(sb.ToString());
             }
             catch { PrintError("Error in AnimationLock Module"); }
         }
@@ -207,6 +233,18 @@ namespace NoClippy.Modules
             if (ImGui.Checkbox("Enable Animation Lock Reduction", ref Config.EnableAnimLockComp))
                 Config.Save();
 
+            if (ImGui.Checkbox("Enable Percentage Reduction instead of 1ms simulation", ref Config.UsePercentage))
+                Config.Save();
+
+            if(Config.UsePercentage)
+            {
+                if (ImGui.SliderFloat("Remove Animation Lock in Percent", ref Config.AnimationLockPercent, 1f, 100f))
+                    Config.Save();
+            }
+
+            if (ImGui.Checkbox("Allow Cast/LB in Animation Lock Reduction", ref Config.EnableIgnoreCasting))
+                Config.Save();
+
             if (Config.EnableAnimLockComp)
             {
                 ImGui.Columns(2, null, false);
@@ -220,7 +258,6 @@ namespace NoClippy.Modules
                 if (ImGui.Checkbox("Dry Run", ref _))
                 {
                     Config.EnableDryRun = _;
-                    enableAnticheat = false;
                     Config.Save();
                 }
                 PluginUI.SetItemTooltip("The plugin will still log and perform calculations, but no in-game values will be overwritten.");

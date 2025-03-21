@@ -274,10 +274,10 @@ namespace NoClippy.Modules
         {
             if (actionType != 1 || ret == 0) return;
 
-            if (NoClippy.Config.PredictStatusApplications)
+            if (NoClippyUnchained.Config.PredictStatusApplications)
                 PredictStatuses(actionID);
 
-            if (NoClippy.Config.PredictMudras)
+            if (NoClippyUnchained.Config.PredictMudras)
                 PredictMudras(actionID);
         }
 
@@ -369,7 +369,7 @@ namespace NoClippy.Modules
 
         private unsafe void CastBegin(ulong objectID, nint packetData)
         {
-            if (!NoClippy.Config.PredictDualcast || DalamudApi.ClientState.LocalPlayer?.ClassJob.RowId != 35 || *(byte*)(packetData + 2) != 1) return;
+            if (!NoClippyUnchained.Config.PredictDualcast || DalamudApi.ClientState.LocalPlayer?.ClassJob.RowId != 35 || *(byte*)(packetData + 2) != 1) return;
 
             var actionID = *(ushort*)packetData;
             if (actionID < 9) return; // Special actions

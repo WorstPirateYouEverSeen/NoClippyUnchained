@@ -5,12 +5,12 @@ using Dalamud.Plugin.Services;
 
 namespace NoClippy
 {
-    public class NoClippy : IDalamudPlugin
+    public class NoClippyUnchained : IDalamudPlugin
     {
-        public static NoClippy Plugin { get; private set; }
+        public static NoClippyUnchained Plugin { get; private set; }
         public static Configuration Config { get; private set; }
 
-        public NoClippy(IDalamudPluginInterface pluginInterface)
+        public NoClippyUnchained(IDalamudPluginInterface pluginInterface)
         {
             Plugin = this;
             DalamudApi.Initialize(this, pluginInterface);

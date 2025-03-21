@@ -17,8 +17,8 @@ namespace NoClippy.Modules
     {
         public override bool IsEnabled
         {
-            get => NoClippy.Config.EnableEncounterStats;
-            set => NoClippy.Config.EnableEncounterStats = value;
+            get => NoClippyUnchained.Config.EnableEncounterStats;
+            set => NoClippyUnchained.Config.EnableEncounterStats = value;
         }
 
         public override int DrawOrder => 5;
@@ -41,7 +41,7 @@ namespace NoClippy.Modules
         {
             var span = DateTime.Now - begunEncounter;
             var formattedTime = $"{Math.Floor(span.TotalMinutes):00}:{span.Seconds:00}";
-            NoClippy.PrintLog($"[{formattedTime}] Encounter stats: {encounterTotalClip:0.00} seconds of clipping, {encounterTotalWaste:0.00} seconds of wasted GCD.");
+            NoClippyUnchained.PrintLog($"[{formattedTime}] Encounter stats: {encounterTotalClip:0.00} seconds of clipping, {encounterTotalWaste:0.00} seconds of wasted GCD.");
             begunEncounter = DateTime.MinValue;
         }
 
@@ -53,8 +53,8 @@ namespace NoClippy.Modules
             if (animationLock != 0.1f) // TODO need better way of detecting cast tax, IsCasting is not reliable here, additionally, this will detect LB
             {
                 encounterTotalClip += animationLock;
-                if (NoClippy.Config.EnableEncounterStatsLogging)
-                    NoClippy.PrintLog($"GCD Clip: {NoClippy.F2MS(animationLock)} ms");
+                if (NoClippyUnchained.Config.EnableEncounterStatsLogging)
+                    NoClippyUnchained.PrintLog($"GCD Clip: {NoClippyUnchained.F2MS(animationLock)} ms");
             }
 
             lastDetectedClip = Game.actionManager->currentSequence;
@@ -70,8 +70,8 @@ namespace NoClippy.Modules
             else if (currentWastedGCD > 0)
             {
                 encounterTotalWaste += currentWastedGCD;
-                if (NoClippy.Config.EnableEncounterStatsLogging)
-                    NoClippy.PrintLog($"Wasted GCD: {NoClippy.F2MS(currentWastedGCD)} ms");
+                if (NoClippyUnchained.Config.EnableEncounterStatsLogging)
+                    NoClippyUnchained.PrintLog($"Wasted GCD: {NoClippyUnchained.F2MS(currentWastedGCD)} ms");
                 currentWastedGCD = 0;
             }
         }
@@ -96,16 +96,16 @@ namespace NoClippy.Modules
         {
             ImGui.Columns(2, null, false);
 
-            if (ImGui.Checkbox("Enable Encounter Stats", ref NoClippy.Config.EnableEncounterStats))
-                NoClippy.Config.Save();
+            if (ImGui.Checkbox("Enable Encounter Stats", ref NoClippyUnchained.Config.EnableEncounterStats))
+                NoClippyUnchained.Config.Save();
             PluginUI.SetItemTooltip("Tracks clips and wasted GCD time while in combat, and logs the total afterwards.");
 
             ImGui.NextColumn();
 
-            if (NoClippy.Config.EnableEncounterStats)
+            if (NoClippyUnchained.Config.EnableEncounterStats)
             {
-                if (ImGui.Checkbox("Enable Stats Logging", ref NoClippy.Config.EnableEncounterStatsLogging))
-                    NoClippy.Config.Save();
+                if (ImGui.Checkbox("Enable Stats Logging", ref NoClippyUnchained.Config.EnableEncounterStatsLogging))
+                    NoClippyUnchained.Config.Save();
                 PluginUI.SetItemTooltip("Logs individual encounter clips and wasted GCD time.");
             }
 

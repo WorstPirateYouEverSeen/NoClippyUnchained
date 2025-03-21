@@ -1,0 +1,16 @@
+﻿{
+  "Author": "Mentor Btw",
+  "Name": "NoClippyUnchained",
+  "Punchline": "Feel the full extent of no animation locks.",
+  "Description": "Feel the full extent of no animation locks.",
+  "InternalName": "NoClippyUnchained",
+  "ApplicableVersion": "any",
+  "DalamudApiLevel": 11,
+  "RepoUrl": "https://github.com/Paparogue",
+  "IconUrl": "https://raw.github.com/Paparogue/NoClippyUnchained/606ed286d0f83203ba7aeec765db6d82958571d8/Unchained.png",
+  "ImageUrls": [ "" ],
+  "Tags": [
+    "UI",
+    "Utility"
+  ]
+}
