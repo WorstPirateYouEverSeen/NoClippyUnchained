@@ -1,4 +1,5 @@
 # NoClippyUnchained
+![NoClippyUnchained Logo](https://raw.github.com/Paparogue/NoClippyUnchained/c9c81114ad65a4fe22fea29954b0fc452d8570fb/Unchained.png)
 A Dalamud plugin for FFXIV that improves gameplay responsiveness by fully removing animation locks.
 
 ## Features
@@ -16,6 +17,9 @@ https://raw.githubusercontent.com/Paparogue/PaparogueRepo/refs/heads/main/repo.j
 ```
 
 ## Configuration Guide
+
+![NoClippyUnchained UI](https://raw.github.com/Paparogue/NoClippyUnchained/c9c81114ad65a4fe22fea29954b0fc452d8570fb/grafik.png)
+
 ### General Settings
 - **Enable/Disable Animation Lock Reduction**: Toggle the main functionality on or off
 - **Use Percentage Instead of Fixed Reduction**: Switch between fixed 1ms reduction or percentage-based
