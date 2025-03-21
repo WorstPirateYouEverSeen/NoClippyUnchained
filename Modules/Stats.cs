@@ -2,7 +2,7 @@ using System;
 using Dalamud.Game.ClientState.Conditions;
 using ImGuiNET;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public partial class Configuration
     {
@@ -11,7 +11,7 @@ namespace NoClippy
     }
 }
 
-namespace NoClippy.Modules
+namespace NoClippyUnchained.Modules
 {
     public class Stats : Module
     {

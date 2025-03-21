@@ -1,6 +1,6 @@
 ﻿using Dalamud.Configuration;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public partial class Configuration : IPluginConfiguration
     {

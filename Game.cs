@@ -6,7 +6,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using Status = FFXIVClientStructs.FFXIV.Client.Game.Status;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public static unsafe class Game
     {

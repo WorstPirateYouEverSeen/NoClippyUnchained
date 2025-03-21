@@ -1,4 +1,4 @@
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public abstract class Module
     {

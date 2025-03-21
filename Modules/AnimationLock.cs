@@ -6,9 +6,9 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Network;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using ImGuiNET;
-using static NoClippy.NoClippyUnchained;
+using static NoClippyUnchained.NoClippyUnchained;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public partial class Configuration
     {
@@ -24,7 +24,7 @@ namespace NoClippy
     }
 }
 
-namespace NoClippy.Modules
+namespace NoClippyUnchained.Modules
 {
     public class AnimationLock : Module
     {
@@ -144,7 +144,7 @@ namespace NoClippy.Modules
 
                     var adjustedAnimationLock = Math.Max(oldLock + correction + networkVariation, 0);
 
-                    if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 10)
+                    if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 20)
                     {
                         Game.actionManager->animationLock = adjustedAnimationLock;
 
@@ -171,14 +171,13 @@ namespace NoClippy.Modules
                 }
                 else
                 {
-                    var sequence = *(ushort*)(effectHeader + 0x18); // This is 0 for some special actions
                     var actionID = *(ushort*)(effectHeader + 0x1C);
                     // Calculate the percentage reduction
                     var reductionPercent = Config.AnimationLockPercent / 100f;
                     var adjustedAnimationLock = oldLock * (1f - reductionPercent);
 
                     // Apply the reduced animation lock
-                    if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 10)
+                    if (!IsDryRunEnabled && float.IsFinite(adjustedAnimationLock) && adjustedAnimationLock < 20)
                     {
                         Game.actionManager->animationLock = adjustedAnimationLock;
 
@@ -233,16 +232,16 @@ namespace NoClippy.Modules
             if (ImGui.Checkbox("Enable Animation Lock Reduction", ref Config.EnableAnimLockComp))
                 Config.Save();
 
-            if (ImGui.Checkbox("Enable Percentage Reduction instead of 1ms simulation", ref Config.UsePercentage))
+            if (ImGui.Checkbox("Use Percentage Instead of Fixed 1ms Reduction", ref Config.UsePercentage))
                 Config.Save();
 
             if(Config.UsePercentage)
             {
-                if (ImGui.SliderFloat("Remove Animation Lock in Percent", ref Config.AnimationLockPercent, 1f, 100f))
+                if (ImGui.SliderFloat("Animation Lock Reduction Percentage", ref Config.AnimationLockPercent, 1f, 100f))
                     Config.Save();
             }
 
-            if (ImGui.Checkbox("Allow Cast/LB in Animation Lock Reduction", ref Config.EnableIgnoreCasting))
+            if (ImGui.Checkbox("Allow Cast & Limit Break Animation Lock Reduction", ref Config.EnableIgnoreCasting))
                 Config.Save();
 
             if (Config.EnableAnimLockComp)

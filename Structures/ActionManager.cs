@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace NoClippy.Structures
+namespace NoClippyUnchained.Structures
 {
     [StructLayout(LayoutKind.Explicit)]
     public struct ActionManager

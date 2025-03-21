@@ -1,6 +1,6 @@
 ﻿using ImGuiNET;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public static class PluginUI
     {

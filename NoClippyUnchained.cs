@@ -3,7 +3,7 @@ using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public class NoClippyUnchained : IDalamudPlugin
     {
@@ -25,7 +25,7 @@ namespace NoClippy
                 DalamudApi.Framework.Update += Update;
                 DalamudApi.PluginInterface.UiBuilder.Draw += PluginUI.Draw;
                 DalamudApi.PluginInterface.UiBuilder.OpenConfigUi += ConfigUI.ToggleVisible;
-
+                DalamudApi.PluginInterface.UiBuilder.OpenMainUi += ConfigUI.ToggleVisible;
                 Modules.Modules.Initialize();
             }
             catch (Exception e)
@@ -35,8 +35,8 @@ namespace NoClippy
             }
         }
 
-        [Command("/noclippy")]
-        [HelpMessage("/noclippy [on|off|toggle|dry|help] - Toggles the config window if no option is specified.")]
+        [Command("/noclippyunchained")]
+        [HelpMessage("/noclippyunchained [on|off|toggle|dry|help] - Toggles the config window if no option is specified.")]
         private void OnNoClippy(string command, string argument)
         {
             switch (argument)
@@ -64,15 +64,15 @@ namespace NoClippy
                     ConfigUI.ToggleVisible();
                     break;
                 default:
-                    PrintEcho("Invalid usage: Command must be \"/noclippy <option>\"." +
+                    PrintEcho("Invalid usage: Command must be \"/noclippyunchained <option>\"." +
                         "\non / off / toggle - Enables or disables animation lock compensation." +
                         "\ndry - Toggles dry run (will not override the animation lock).");
                     break;
             }
         }
 
-        public static void PrintEcho(string message) => DalamudApi.ChatGui.Print($"[NoClippy] {message}");
-        public static void PrintError(string message) => DalamudApi.ChatGui.PrintError($"[NoClippy] {message}");
+        public static void PrintEcho(string message) => DalamudApi.ChatGui.Print($"[NoClippyUnchained] {message}");
+        public static void PrintError(string message) => DalamudApi.ChatGui.PrintError($"[NoClippyUnchained] {message}");
 
         public static void PrintLog(string message)
         {
@@ -82,7 +82,7 @@ namespace NoClippy
                 {
                     DalamudApi.ChatGui.Print(new XivChatEntry
                     {
-                        Message = $"[NoClippy] {message}",
+                        Message = $"[NoClippyUnchained] {message}",
                         Type = Config.LogChatType
                     });
                 }
@@ -110,6 +110,7 @@ namespace NoClippy
             DalamudApi.Framework.Update -= Update;
             DalamudApi.PluginInterface.UiBuilder.Draw -= PluginUI.Draw;
             DalamudApi.PluginInterface.UiBuilder.OpenConfigUi -= ConfigUI.ToggleVisible;
+            DalamudApi.PluginInterface.UiBuilder.OpenMainUi -= ConfigUI.ToggleVisible;
 
             Modules.Modules.Dispose();
             Game.Dispose();

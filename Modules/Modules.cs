@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using ImGuiNET;
 
-namespace NoClippy.Modules
+namespace NoClippyUnchained.Modules
 {
     public static class Modules
     {

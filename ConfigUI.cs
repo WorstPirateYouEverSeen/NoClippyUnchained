@@ -6,7 +6,7 @@ using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public static class ConfigUI
     {
@@ -19,7 +19,7 @@ namespace NoClippy
 
             //ImGui.SetNextWindowSizeConstraints(new Vector2(400, 200) * ImGuiHelpers.GlobalScale, new Vector2(10000));
             ImGui.SetNextWindowSize(new Vector2(400, 0) * ImGuiHelpers.GlobalScale);
-            ImGui.Begin("NoClippy Configuration", ref isVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse);
+            ImGui.Begin("NoClippyUnchained Configuration", ref isVisible, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse);
             AddDonationHeader(1);
             Modules.Modules.Draw();
             ImGui.End();

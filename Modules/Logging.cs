@@ -2,7 +2,7 @@ using System;
 using Dalamud.Game.Text;
 using ImGuiNET;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public partial class Configuration
     {
@@ -12,7 +12,7 @@ namespace NoClippy
 }
 
 // This is a module because why not
-namespace NoClippy.Modules
+namespace NoClippyUnchained.Modules
 {
     public class Logging : Module
     {

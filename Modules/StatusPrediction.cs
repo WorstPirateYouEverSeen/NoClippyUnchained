@@ -7,7 +7,7 @@ using Dalamud.Game.ClientState.Statuses;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using ImGuiNET;
 
-namespace NoClippy
+namespace NoClippyUnchained
 {
     public partial class Configuration
     {
@@ -17,7 +17,7 @@ namespace NoClippy
     }
 }
 
-namespace NoClippy.Modules
+namespace NoClippyUnchained.Modules
 {
     public class StatusPrediction : Module
     {
