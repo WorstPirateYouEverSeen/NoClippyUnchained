@@ -413,6 +413,7 @@ namespace NoClippy.Modules
 
         public override void DrawConfig()
         {
+            /*
             var red = new Vector4(1, 0.25f, 0.25f, 1);
             ImGui.BeginGroup();
             TextCenter(Vector4.One, "Sorry! Temporarily disabled for Dawntrail.");
@@ -446,6 +447,7 @@ namespace NoClippy.Modules
 
             ImGui.Columns(1);
             ImGui.EndDisabled();
+            */
         }
 
         public override void Enable()

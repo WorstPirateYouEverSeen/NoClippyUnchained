@@ -18,6 +18,8 @@ namespace NoClippy
         public Dictionary<uint, float> AnimationLocks = new();
         public ulong TotalActionsReduced = 0ul;
         public double TotalAnimationLockReduction = 0d;
+        public float AnimationLockPercent = 10f;
+        public bool EnableIgnoreCasting = false;
     }
 }
 
@@ -54,7 +56,6 @@ namespace NoClippy.Modules
         private float intervalPacketsTimer = 0;
         private int intervalPacketsIndex = 0;
         private readonly int[] intervalPackets = new int[5]; // Record the last 50 ms of packets
-        private bool enableAnticheat = false;
         private bool saveConfig = false;
         private readonly Dictionary<ushort, float> appliedAnimationLocks = new();
 
@@ -104,13 +105,9 @@ namespace NoClippy.Modules
             {
                 if (oldLock == newLock || sourceActor != DalamudApi.ClientState.LocalPlayer?.Address) return;
 
-                // Ignore cast locks (caster tax, teleport, lb)
-                if (isCasting)
+                if (isCasting && !Config.EnableIgnoreCasting)
                 {
                     isCasting = false;
-
-                    // The old lock should always be 0, but high ping can cause the packet to arrive too late and allow near instant double weaves
-                    newLock += oldLock;
                     if (!IsDryRunEnabled)
                         Game.actionManager->animationLock = newLock;
 
@@ -125,14 +122,6 @@ namespace NoClippy.Modules
                     return;
                 }
 
-                // Special case to (mostly) prevent accidentally using XivAlexander at the same time
-                var isUsingAlexander = newLock % 0.01 is >= 0.0005f and <= 0.0095f;
-                if (!enableAnticheat && isUsingAlexander)
-                {
-                    enableAnticheat = true;
-                    PrintError($"Unexpected lock of {F2MS(newLock)} ms, temporary dry run has been enabled. Please disable any other programs or plugins that may be affecting the animation lock.");
-                }
-
                 var sequence = *(ushort*)(effectHeader + 0x18); // This is 0 for some special actions
                 var actionID = *(ushort*)(effectHeader + 0x1C);
                 var appliedLock = appliedAnimationLocks.GetValueOrDefault(sequence, 0.5f);
@@ -141,9 +130,6 @@ namespace NoClippy.Modules
                     appliedAnimationLocks.Clear(); // Probably unnecessary
 
                 var lastRecordedLock = IsDryRunEnabled ? newLock : appliedLock - simulatedRTT;
-
-                if (!enableAnticheat)
-                    UpdateDatabase(actionID, newLock);
 
                 // Get the difference between the recorded animation lock and the real one
                 var correction = newLock - lastRecordedLock;
@@ -183,9 +169,6 @@ namespace NoClippy.Modules
                         .Append(lastRecordedLock != newLock ? $"({F2MS(lastRecordedLock)} > {F2MS(newLock)} ms)" : $"({F2MS(newLock)} ms)")
                         .Append($" || RTT: {F2MS(rtt)} (+{variationMultiplier:P0}) ms");
 
-                if (enableAnticheat)
-                    sb.Append($" [Alexander: {F2MS(rtt - (appliedLock - simulatedRTT - newLock))} ms]");
-
                 if (!IsDryRunEnabled)
                     sb.Append($" || Lock: {F2MS(oldLock)} > {F2MS(adjustedAnimationLock)} ({F2MS(correction + networkVariation):+0;-#}) ms");
 
@@ -223,8 +206,6 @@ namespace NoClippy.Modules
         {
             if (ImGui.Checkbox("Enable Animation Lock Reduction", ref Config.EnableAnimLockComp))
                 Config.Save();
-            PluginUI.SetItemTooltip("Modifies the way the game handles animation lock," +
-                "\ncausing it to simulate 10 ms ping.");
 
             if (Config.EnableAnimLockComp)
             {
