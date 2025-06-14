@@ -232,16 +232,19 @@ namespace NoClippyUnchained.Modules
             if (ImGui.Checkbox("Enable Animation Lock Reduction", ref Config.EnableAnimLockComp))
                 Config.Save();
 
-            if (ImGui.Checkbox("Use Percentage Instead of Fixed 1ms Reduction", ref Config.UsePercentage))
+            if (ImGui.Checkbox("Use Percentage Reduction Instead Of Fixed", ref Config.UsePercentage))
                 Config.Save();
 
-            if(Config.UsePercentage)
+            if (Config.UsePercentage)
             {
-                if (ImGui.SliderFloat("Animation Lock Reduction Percentage", ref Config.AnimationLockPercent, 1f, 100f))
+                if (ImGui.SliderFloat("% Reduction", ref Config.AnimationLockPercent, 1f, 100f, "%.0f"))
+                {
+                    Config.AnimationLockPercent = MathF.Round(Config.AnimationLockPercent);
                     Config.Save();
+                }
             }
 
-            if (ImGui.Checkbox("Allow Cast & Limit Break Animation Lock Reduction", ref Config.EnableIgnoreCasting))
+            if (ImGui.Checkbox("Allow Cast & Limit Break Animation To Be Reduced", ref Config.EnableIgnoreCasting))
                 Config.Save();
 
             if (Config.EnableAnimLockComp)
