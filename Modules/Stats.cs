@@ -1,6 +1,6 @@
 using System;
 using Dalamud.Game.ClientState.Conditions;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace NoClippyUnchained
 {
@@ -94,7 +94,7 @@ namespace NoClippyUnchained.Modules
 
         public override void DrawConfig()
         {
-            ImGui.Columns(2, null, false);
+            ImGui.Columns(2, "", false);
 
             if (ImGui.Checkbox("Enable Encounter Stats", ref NoClippyUnchained.Config.EnableEncounterStats))
                 NoClippyUnchained.Config.Save();

@@ -1,9 +1,11 @@
 using System;
+using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Statuses;
 using Dalamud.Game.Network;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Network;
 using Status = FFXIVClientStructs.FFXIV.Client.Game.Status;
 
 namespace NoClippyUnchained
@@ -12,16 +14,7 @@ namespace NoClippyUnchained
     {
         public static Structures.ActionManager* actionManager;
 
-        private static nint defaultClientAnimationLockPtr;
-        public static float DefaultClientAnimationLock
-        {
-            get => 0.5f;
-            set
-            {
-                if (defaultClientAnimationLockPtr != nint.Zero)
-                    SafeMemory.WriteBytes(defaultClientAnimationLockPtr, BitConverter.GetBytes(value));
-            }
-        }
+        public const float DefaultClientAnimationLock = 0.5f;
 
         public delegate void UseActionEventDelegate(nint actionManager, uint actionType, uint actionID, ulong targetedActorID, uint param, uint useType, int pvp, nint a8, byte ret);
         public static event UseActionEventDelegate OnUseAction;
@@ -36,11 +29,11 @@ namespace NoClippyUnchained
 
         public delegate void UseActionLocationEventDelegate(nint actionManager, uint actionType, uint actionID, ulong targetedActorID, nint vectorLocation, uint param, byte ret);
         public static event UseActionLocationEventDelegate OnUseActionLocation;
-        private delegate byte UseActionLocationDelegate(nint actionManager, uint actionType, uint actionID, ulong targetedActorID, nint vectorLocation, uint param);
+        private delegate byte UseActionLocationDelegate(nint actionManager, uint actionType, uint actionID, ulong targetedActorID, nint vectorLocation, uint param, byte c);
         private static Hook<UseActionLocationDelegate> UseActionLocationHook;
-        private static byte UseActionLocationDetour(nint actionManager, uint actionType, uint actionID, ulong targetedActorID, nint vectorLocation, uint param)
+        private static byte UseActionLocationDetour(nint actionManager, uint actionType, uint actionID, ulong targetedActorID, nint vectorLocation, uint param, byte c)
         {
-            var ret =  UseActionLocationHook.Original(actionManager, actionType, actionID, targetedActorID, vectorLocation, param);
+            var ret = UseActionLocationHook.Original(actionManager, actionType, actionID, targetedActorID, vectorLocation, param, c);
             OnUseActionLocation?.Invoke(actionManager, actionType, actionID, targetedActorID, vectorLocation, param, ret);
             return ret;
         }
@@ -83,13 +76,13 @@ namespace NoClippyUnchained
         public delegate void UpdateStatusListEventDelegate(StatusList statusList, short slot, ushort statusID, float remainingTime, ushort stackParam, uint sourceID);
         public static event UpdateStatusListEventDelegate OnUpdateStatusList;
         private delegate byte UpdateStatusDelegate(nint status, short slot, ushort statusID, float remainingTime, ushort stackParam, uint sourceID, bool individualUpdate);
-        //public static event UpdateStatusDelegate OnUpdateStatus;
         private static Hook<UpdateStatusDelegate> UpdateStatusHook;
+
         private static byte UpdateStatusDetour(nint statusList, short slot, ushort statusID, float remainingTime, ushort stackParam, uint sourceID, bool individualUpdate)
         {
             var statusPtr = (Status*)(statusList + 0x8 + 0xC * slot);
             var oldStatusID = statusPtr->StatusId;
-            var oldSourceID = statusPtr->SourceId;
+            var oldSourceID = statusPtr->SourceObject.ObjectId;
             var ret = UpdateStatusHook.Original(statusList, slot, statusID, remainingTime, stackParam, sourceID, individualUpdate);
 
             if (DalamudApi.ClientState.LocalPlayer is not { } p || statusList.ToInt64() != p.StatusList.Address.ToInt64()) return ret;
@@ -105,9 +98,20 @@ namespace NoClippyUnchained
             return ret;
         }
 
-        public static event IGameNetwork.OnNetworkMessageDelegate OnNetworkMessage;
-        private static void NetworkMessage(nint dataPtr, ushort opCode, uint sourceActorId, uint targetActorId, NetworkMessageDirection direction) =>
-            OnNetworkMessage?.Invoke(dataPtr, opCode, sourceActorId, targetActorId, direction);
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        private delegate byte ProcessZonePacketUpDelegate(IntPtr a1, IntPtr dataPtr, IntPtr a3, byte a4);
+        private static Hook<ProcessZonePacketUpDelegate> ProcessZonePacketUpHook;
+
+        public delegate void NetworkMessageEventDelegate(NetworkMessageDirection direction);
+        public static event NetworkMessageEventDelegate OnNetworkMessageDelegate;
+
+
+        private static byte NetworkMessageDetour(IntPtr a1, IntPtr dataPtr, IntPtr a3, byte a4)
+        {
+            OnNetworkMessageDelegate?.Invoke(NetworkMessageDirection.ZoneUp);
+
+            return ProcessZonePacketUpHook.Original(a1, dataPtr, a3, a4);
+        }
 
         public static void Initialize()
         {
@@ -115,22 +119,18 @@ namespace NoClippyUnchained
 
             UseActionHook = DalamudApi.GameInteropProvider.HookFromAddress<UseActionDelegate>((nint)ActionManager.MemberFunctionPointers.UseAction, UseActionDetour);
             UseActionLocationHook = DalamudApi.GameInteropProvider.HookFromAddress<UseActionLocationDelegate>((nint)ActionManager.MemberFunctionPointers.UseActionLocation, UseActionLocationDetour);
-            CastBeginHook = DalamudApi.GameInteropProvider.HookFromAddress<CastBeginDelegate>(DalamudApi.SigScanner.ScanText("40 56 41 56 48 81 EC ?? ?? ?? ?? 48 8B F2"), CastBeginDetour); // Bad sig, found within ActorCast packet
-            CastInterruptHook = DalamudApi.GameInteropProvider.HookFromAddress<CastInterruptDelegate>(DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? EB 6A 41 8B D6"), CastInterruptDetour);
-            ReceiveActionEffectHook = DalamudApi.GameInteropProvider.HookFromAddress<ReceiveActionEffectDelegate>(DalamudApi.SigScanner.ScanModule("40 55 53 56 41 54 41 55 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 70"), ReceiveActionEffectDetour); // 4C 89 44 24 18 53 56 57 41 54 41 57 48 81 EC ?? 00 00 00 8B F9
-            UpdateStatusHook = DalamudApi.GameInteropProvider.HookFromAddress<UpdateStatusDelegate>(DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? FF C6 48 8D 5B 0C"), UpdateStatusDetour);
-            //defaultClientAnimationLockPtr = DalamudApi.SigScanner.ScanModule("F3 0F 10 05 ?? ?? ?? ?? 41 8B D5"); // TODO: Changed to static address
-
-            // This is normally 0.5f, but I'm increasing it to prevent any weird discrepancies on high ping
-            //DefaultClientAnimationLock = 0.6f;
-
-            DalamudApi.GameNetwork.NetworkMessage += NetworkMessage;
+            CastBeginHook = DalamudApi.GameInteropProvider.HookFromAddress<CastBeginDelegate>(DalamudApi.SigScanner.ScanText("40 53 57 48 81 EC ?? ?? ?? ?? 48 8B FA 8B D1"), CastBeginDetour); // Bad sig, found within ActorCast packet
+            CastInterruptHook = DalamudApi.GameInteropProvider.HookFromAddress<CastInterruptDelegate>(DalamudApi.SigScanner.ScanText("48 8B C4 48 83 EC 48 48 89 58 08"), CastInterruptDetour);
+            ReceiveActionEffectHook = DalamudApi.GameInteropProvider.HookFromAddress<ReceiveActionEffectDelegate>(DalamudApi.SigScanner.ScanModule("40 55 56 57 41 54 41 55 41 56 41 57 48 8D AC 24"), ReceiveActionEffectDetour);
+            UpdateStatusHook = DalamudApi.GameInteropProvider.HookFromAddress<UpdateStatusDelegate>(DalamudApi.SigScanner.ScanText("E8 ?? ?? ?? ?? 40 0A F0 48 8D 5B"), UpdateStatusDetour);
+            ProcessZonePacketUpHook = DalamudApi.GameInteropProvider.HookFromAddress<ProcessZonePacketUpDelegate>(DalamudApi.SigScanner.ScanText("48 89 5C 24 ?? 48 89 74 24 ?? 4C 89 64 24 ?? 55 41 56 41 57 48 8B EC 48 83 EC 70"), NetworkMessageDetour);
 
             UseActionHook.Enable();
             UseActionLocationHook.Enable();
             CastBeginHook.Enable();
             CastInterruptHook.Enable();
             ReceiveActionEffectHook.Enable();
+            ProcessZonePacketUpHook.Enable();
             //UpdateStatusHook.Enable();
         }
 
@@ -139,8 +139,6 @@ namespace NoClippyUnchained
 
         public static void Dispose()
         {
-            DalamudApi.GameNetwork.NetworkMessage -= NetworkMessage;
-
             UseActionHook?.Dispose();
             OnUseAction = null;
             UseActionLocationHook?.Dispose();
@@ -153,7 +151,8 @@ namespace NoClippyUnchained
             OnReceiveActionEffect = null;
             UpdateStatusHook?.Dispose();
             OnUpdateStatusList = null;
-            //OnUpdateStatus = null;
+            ProcessZonePacketUpHook?.Dispose();
+            OnNetworkMessageDelegate = null;
 
             OnUpdate = null;
 

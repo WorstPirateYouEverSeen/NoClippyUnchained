@@ -5,7 +5,7 @@ using System.Text;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.Network;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using static NoClippyUnchained.NoClippyUnchained;
 
 namespace NoClippyUnchained
@@ -249,7 +249,7 @@ namespace NoClippyUnchained.Modules
 
             if (Config.EnableAnimLockComp)
             {
-                ImGui.Columns(2, null, false);
+                ImGui.Columns(2, "", false);
 
                 if (ImGui.Checkbox("Enable Logging", ref Config.EnableLogging))
                     Config.Save();
@@ -270,14 +270,20 @@ namespace NoClippyUnchained.Modules
             ImGui.TextUnformatted($"Reduced a total time of {TimeSpan.FromSeconds(Config.TotalAnimationLockReduction):d\\:hh\\:mm\\:ss} from {Config.TotalActionsReduced} actions");
         }
 
+        private void NetworkMessage(NetworkMessageDirection direction)
+        {
+            if (direction != NetworkMessageDirection.ZoneUp) return;
+            intervalPackets[intervalPacketsIndex]++;
+        }
+
         public override void Enable()
         {
             Game.OnUseActionLocation += UseActionLocation;
             Game.OnCastBegin += CastBegin;
             Game.OnCastInterrupt += CastInterrupt;
             Game.OnReceiveActionEffect += ReceiveActionEffect;
-            Game.OnNetworkMessage += NetworkMessage;
             Game.OnUpdate += Update;
+            Game.OnNetworkMessageDelegate += NetworkMessage;
         }
 
         public override void Disable()
@@ -286,8 +292,8 @@ namespace NoClippyUnchained.Modules
             Game.OnCastBegin -= CastBegin;
             Game.OnCastInterrupt -= CastInterrupt;
             Game.OnReceiveActionEffect -= ReceiveActionEffect;
-            Game.OnNetworkMessage -= NetworkMessage;
             Game.OnUpdate -= Update;
+            Game.OnNetworkMessageDelegate -= NetworkMessage;
         }
     }
 }
