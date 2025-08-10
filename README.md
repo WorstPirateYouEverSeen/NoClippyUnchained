@@ -1,5 +1,5 @@
 # NoClippyUnchained
-![NoClippyUnchained Logo](https://raw.github.com/Paparogue/NoClippyUnchained/c9c81114ad65a4fe22fea29954b0fc452d8570fb/Unchained.png)
+![NoClippyUnchained Logo](https://github.com/Paparogue/NoClippyUnchained/09c6a75981f294949a7b8d18517f2e7d0a76a95c/Design.jpg)
 
 A Dalamud plugin for FFXIV that improves gameplay responsiveness by fully removing animation locks.
 
