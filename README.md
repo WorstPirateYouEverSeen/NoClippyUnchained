@@ -6,10 +6,7 @@ A Dalamud plugin for FFXIV that improves gameplay responsiveness by fully removi
 ## Features
 - **Animation Lock Compensation**: Reduces animation lock delays for a smoother gameplay experience
 - **Percentage-based Reduction**: Configure animation lock reduction as a percentage instead of fixed values
-- **Dry Run Mode**: Test the system without actually modifying in-game values
-- **Detailed Logging**: Track every adjustment with comprehensive logging
-- **Combat Statistics**: Keep track of total time saved and actions optimized
-
+- 
 ## Installation
 Add the following URL to your third-party repository list in the Dalamud Plugin Installer:
 ```
